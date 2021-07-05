@@ -101,6 +101,7 @@ namespace Axolotl
                         }
                     break; 
             }
+            generateWerightedSelection();
         }
 
         private void generateWerightedSelection()
@@ -120,18 +121,6 @@ namespace Axolotl
                 return PickupIndex.none;
             }
             return run.runRNG.NextElementUniform<PickupIndex>(list);
-        }
-
-        // Start is called before the first frame update
-        void Start()
-        {
-
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
         }
     }
 }

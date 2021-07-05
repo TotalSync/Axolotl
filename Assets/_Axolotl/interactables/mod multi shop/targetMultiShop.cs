@@ -40,6 +40,8 @@ namespace Axolotl
 		public int baseCost;
 		public CostTypeIndex costType;
 
+		private selectiveDropTable dropTable;
+
 		private Xoroshiro128Plus rng;
 
         void Awake() 
@@ -89,10 +91,25 @@ namespace Axolotl
 
         }
 
-        //This will populate the items in the multishop terminals based ont the type of shop it is.
+        //This will populate all of the designated locations with selectiveMultiShops
         void GenerateTerminals()
         {
-
+			this.terminalGameObjects = new GameObject[this.terminalPositions.Length];
+			for (int i = 0; i < this.terminalPositions.Length; i++)
+            {
+				PickupIndex pickupIndex = PickupIndex.none;
+				switch (this.type)
+                {
+					case ShopType.Modded:
+						break;
+					case ShopType.ModdedEquip:
+						break;
+					case ShopType.Vanilla:
+						break;
+					case ShopType.VanillaEquip:
+						break;
+                }
+            }
         }
 
 		private void DisableAllTerminals(Interactor interactor)
