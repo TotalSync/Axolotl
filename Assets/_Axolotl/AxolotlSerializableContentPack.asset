@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: AxolotlSerializableContentPack
+  m_EditorClassIdentifier: 
+  bodyPrefabs: []
+  masterPrefabs: []
+  projectilePrefabs: []
+  gameModePrefabs: []
+  networkedObjectPrefabs: []
+  skillDefs: []
+  skillFamilies: []
+  sceneDefs: []
+  itemDefs:
+  - {fileID: 11400000, guid: 714d806d4ca7f0d46a1544a0243334c8, type: 2}
+  - {fileID: 11400000, guid: 99279efc34a441c4e9573e6929b3d4ce, type: 2}
+  - {fileID: 11400000, guid: 8228aed0e30b9204abfd2882b8fd426f, type: 2}
+  - {fileID: 11400000, guid: 1e7d17bb52cb96d42b4150abef92559b, type: 2}
+  - {fileID: 11400000, guid: 454eb473cf877724caeb74639247d25d, type: 2}
+  - {fileID: 11400000, guid: 369b8df269c9272409e0fbe1c30fdd60, type: 2}
+  equipmentDefs: []
+  buffDefs: []
+  eliteDefs: []
+  unlockableDefs: []
+  survivorDefs: []
+  artifactDefs: []
+  surfaceDefs: []
+  networkSoundEventDefs: []
+  musicTrackDefs: []
+  gameEndingDefs: []
+  entityStateConfigurations: []
+  entityStateTypes: []
