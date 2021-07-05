@@ -1,0 +1,22 @@
+*.sln
+*.csproj
+*.prefs
+*.assets
+*.asset
+*.prefab
+*.asmdef
+*.meta
+*.dll
+*.mat
+
+.vs
+Library
+obj
+Packages
+ProjectSettings
+Temp
+ThunderKit
+
+Assets/*
+!Assets/_Axolotl
+Assets/_Axolotl/thunderkit things
