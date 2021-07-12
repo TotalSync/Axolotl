@@ -33,7 +33,7 @@ namespace Axolotl
 
         public override void setIDR()
         {
-            GameObject ItemBodyModelPrefab = SyncCache.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab;
+            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab;
             if (ItemBodyModelPrefab == null)
             {
                 Log.LogError(nameof(setIDR) + ": " + nameof(greedy_milk) + " ModelPrefab broke.");
@@ -209,7 +209,7 @@ namespace Axolotl
             var obj = GameObject.Find("TeleporterBeacon");
             if (obj != null)
             {
-                var prefab = Instantiate(SyncCache.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab, obj.transform);
+                var prefab = Instantiate(AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab, obj.transform);
                 prefab.transform.rotation *= Quaternion.Euler(new Vector3(-90.0f, 0.0f, 75.0f));
                 prefab.transform.position += new Vector3(-2.38f, -0.85f, -4.84f);
                 prefab.transform.localScale /= prefab.transform.lossyScale.magnitude;

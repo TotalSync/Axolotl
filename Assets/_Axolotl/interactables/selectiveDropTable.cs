@@ -11,10 +11,10 @@ namespace Axolotl
     public class selectiveDropTable : MonoBehaviour
     {
 
-        private List<PickupIndex> availableTeir1DropList;
-        private List<PickupIndex> availableTeir2DropList;
-        private List<PickupIndex> availableTeir3DropList;
-        private List<PickupIndex> availableEquipmentDropList;
+        public List<PickupIndex> availableTeir1DropList;
+        public List<PickupIndex> availableTeir2DropList;
+        public List<PickupIndex> availableTeir3DropList;
+        public List<PickupIndex> availableEquipmentDropList;
         private readonly WeightedSelection<List<PickupIndex>> selector = new WeightedSelection<List<PickupIndex>>(8);
 
         public static readonly int lastVanillaItem = 120;
@@ -24,11 +24,11 @@ namespace Axolotl
         public float tier2Weight = 0.2f;
         public float tier3Weight = 0.01f;
 
-        public selectiveDropTable(targetMultiShop.ShopType type, Run run)
+        public selectiveDropTable(selectiveDropTableController.ShopType type, Run run)
         {
             switch (type) 
             {
-                case targetMultiShop.ShopType.Modded:
+                case selectiveDropTableController.ShopType.Modded:
                     foreach (PickupIndex item in run.availableTier1DropList)
                         {
                             var pickup = PickupCatalog.GetPickupDef(item);
@@ -54,7 +54,7 @@ namespace Axolotl
                             }
                         }
                     break;
-                case targetMultiShop.ShopType.ModdedEquip:
+                case selectiveDropTableController.ShopType.ModdedEquip:
                     foreach (PickupIndex item in run.availableEquipmentDropList)
                         {
                             var pickup = PickupCatalog.GetPickupDef(item);
@@ -64,7 +64,7 @@ namespace Axolotl
                             }
                         }
                     break;
-                case targetMultiShop.ShopType.Vanilla:
+                case selectiveDropTableController.ShopType.Vanilla:
                     foreach (PickupIndex item in run.availableTier1DropList)
                         {
                             var pickup = PickupCatalog.GetPickupDef(item);
@@ -90,7 +90,7 @@ namespace Axolotl
                             }
                         }
                     break;
-                case targetMultiShop.ShopType.VanillaEquip:
+                    case selectiveDropTableController.ShopType.VanillaEquip:
                     foreach (PickupIndex item in run.availableEquipmentDropList)
                         {
                             var pickup = PickupCatalog.GetPickupDef(item);

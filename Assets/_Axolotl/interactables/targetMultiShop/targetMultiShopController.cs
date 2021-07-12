@@ -7,21 +7,14 @@ using R2API.Utils;
 using RoR2;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Events;
 
 namespace Axolotl
 {
     [BepInDependency("com.bepis.r2api")]
-    public class targetMultiShop : NetworkBehaviour
+    public class targetMultiShopController : NetworkBehaviour, IHologramContentProvider
     {
-        public enum ShopType
-        {
-            Vanilla,
-            VanillaEquip,
-            Modded,
-            ModdedEquip
-        }
-
-        public ShopType type;
+        public selectiveDropTableController.ShopType type;
 
 		public GameObject terminalPrefab;
 				
@@ -37,13 +30,39 @@ namespace Axolotl
 		[SyncVar]
 		private bool available = true;
 
+		public ItemTier itemTier;
 		public int baseCost;
 		public CostTypeIndex costType;
 
-		private selectiveDropTable dropTable;
-
 		private Xoroshiro128Plus rng;
 
+
+        public targetMultiShopController(Transform[] transforms) 
+		{
+			this.terminalPositions = transforms;
+			if (Run.instance)
+			{
+				this.rng = new Xoroshiro128Plus(Run.instance.treasureRng.nextUlong);
+				this.GenerateTerminals();
+				if (NetworkServer.active)
+				{
+					this.Networkcost = Run.instance.GetDifficultyScaledCost(this.baseCost);
+					if (this.terminalGameObjects != null)
+					{
+						GameObject[] array = this.terminalGameObjects;
+						for (int i = 0; i < array.Length; i++)
+						{
+							PurchaseInteraction component = array[i].GetComponent<PurchaseInteraction>();
+							component.Networkcost = this.cost;
+							component.costType = this.costType;
+						}
+					}
+				}
+			}
+
+		}
+
+		/*
         void Awake() 
         {
 			if (NetworkServer.active)
@@ -53,7 +72,6 @@ namespace Axolotl
 			}       
 		}
 
-		// Token: 0x0600142C RID: 5164 RVA: 0x00053CA0 File Offset: 0x00051EA0
 		private void Start()
 		{
 			if (Run.instance && NetworkServer.active)
@@ -71,8 +89,7 @@ namespace Axolotl
 				}
 			}
 		}
-
-		// Token: 0x0600142D RID: 5165 RVA: 0x00053D14 File Offset: 0x00051F14
+		*/
 		private void OnDestroy()
 		{
 			if (this.terminalGameObjects != null)
@@ -95,21 +112,45 @@ namespace Axolotl
         void GenerateTerminals()
         {
 			this.terminalGameObjects = new GameObject[this.terminalPositions.Length];
+			if (this.terminalPositions == null)
+            {
+				Log.LogError(nameof(GenerateTerminals) + ": terminal positions is empty.");
+				return;
+            }
 			for (int i = 0; i < this.terminalPositions.Length; i++)
             {
 				PickupIndex pickupIndex = PickupIndex.none;
-				switch (this.type)
-                {
-					case ShopType.Modded:
-						break;
-					case ShopType.ModdedEquip:
-						break;
-					case ShopType.Vanilla:
-						break;
-					case ShopType.VanillaEquip:
-						break;
-                }
+				if (this.type == selectiveDropTableController.ShopType.VanillaEquip || this.type == selectiveDropTableController.ShopType.ModdedEquip)
+				{
+					pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableEquipmentDropList);
+				}
+				else
+				{
+					switch (this.itemTier)
+					{
+						case ItemTier.Tier1:
+							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir1DropList);
+							break;
+						case ItemTier.Tier2:
+							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir2DropList);
+							break;
+						case ItemTier.Tier3:
+							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir3DropList);
+							break;
+					}
+				}
+				bool newHidden = this.hideDisplayContent && i != 0;
+				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(this.terminalPrefab,
+					this.terminalPositions[i].position, this.terminalPositions[i].rotation);
+				this.terminalGameObjects[i] = gameObject;
+				gameObject.GetComponent<targetMultiShopBehavior>().SetPickupIndex(pickupIndex, newHidden);
+				NetworkServer.Spawn(gameObject);
             }
+			GameObject[] array = this.terminalGameObjects;
+			for (int i  = 0; i < array.Length; i++)
+            {
+				array[i].GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(this.DisableAllTerminals));
+			}
         }
 
 		private void DisableAllTerminals(Interactor interactor)
@@ -117,7 +158,7 @@ namespace Axolotl
 			foreach (GameObject gameObject in this.terminalGameObjects)
 			{
 				gameObject.GetComponent<PurchaseInteraction>().Networkavailable = false;
-				gameObject.GetComponent<ShopTerminalBehavior>().SetNoPickup();
+				gameObject.GetComponent<targetMultiShopBehavior>().SetNoPickup();
 			}
 			this.Networkavailable = false;
 		}

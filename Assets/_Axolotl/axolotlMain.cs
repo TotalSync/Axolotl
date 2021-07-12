@@ -10,6 +10,7 @@ using RoR2.ContentManagement;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+
 using Path = System.IO.Path;
 
 namespace Axolotl
@@ -20,7 +21,7 @@ namespace Axolotl
     //We will be using 3 modules from R2API: ItemAPI to add our item, ItemDropAPI to have our item drop ingame, and LanguageAPI to add our language tokens.
     [R2APISubmoduleDependency(nameof(ItemAPI), nameof(ItemDropAPI), nameof(LanguageAPI), nameof(RecalculateStatsAPI))]
 
-    public class SyncCache : BaseUnityPlugin
+    public class AxolotlShop : BaseUnityPlugin
     {
         //The Plugin GUID should be a unique ID for this plugin, which is human readable (as it is used in places like the config).
         public const string PluginGUID = PluginAuthor + "." + PluginName;
@@ -113,8 +114,23 @@ namespace Axolotl
                     Log.LogMessage("Skipping " + item.nameToken + " because it was banned in the config.");
                 }
             }
+            
+            //This sets our hooks for our stage when it loads.
+            Log.LogDebug(nameof(AxolotlStageController) + " " + nameof(Awake) + ": Setting Stage hook.");
 
-            Log.LogInfo(nameof(Awake) + ": " + PluginName +"has Loaded.");
+
+            AxolotlStageController.loadAssetBundle();
+            Stage.onStageStartGlobal += (stage) =>
+            {
+                Log.LogDebug(nameof(AxolotlStageController.initializeAxolotlStage) + ": " + stage.sceneDef.cachedName);
+                if (stage.sceneDef.cachedName == "ShipShopStage")
+                {
+                    AxolotlStageController.initializeAxolotlStage(Run.instance);
+                }
+            };
+             
+
+            Log.LogInfo(nameof(Awake) + ": " + PluginName +" has Loaded.");
             return;
         }
 

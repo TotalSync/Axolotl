@@ -35,7 +35,7 @@ namespace Axolotl
         
         public override void setIDR()
         {
-            GameObject ItemBodyModelPrefab = SyncCache.ContentPackProvider.contentPack.itemDefs.Find("greedy_milk").pickupModelPrefab;
+            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("greedy_milk").pickupModelPrefab;
             if (ItemBodyModelPrefab == null) {
                 Log.LogError(nameof(setIDR) + ": " + nameof(greedy_milk) + " ModelPrefab broke.");
             } 

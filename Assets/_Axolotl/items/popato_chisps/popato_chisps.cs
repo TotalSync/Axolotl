@@ -36,26 +36,29 @@ namespace Axolotl
         
         public override void SetHooks()
         {
+            
             R2API.RecalculateStatsAPI.GetStatCoefficients += (body, args) =>
             {
                 updateHealthDamageInc(body, args);
             };
+            
         }
         
         private void updateHealthDamageInc(CharacterBody body, RecalculateStatsAPI.StatHookEventArgs args)
         {
-            var count = body.inventory.GetItemCount(this.item_def);
-            if (count > 0)
+            if (body == null || body.inventory == null)
             {
-                args.baseDamageAdd = (float)Math.Truncate(body.maxHealth / 200.0f) * (.1f * count);
-                args.baseHealthAdd = count * 10.0f;
+                return;
             }
+            var count = body.inventory.GetItemCount(this.item_def);
+            args.baseDamageAdd = (float)Math.Truncate(body.maxHealth / 200.0f) * (.1f * count);
+            args.baseHealthAdd = count * 10.0f;
         }
 
 
         public override void setIDR()
         {
-            GameObject ItemBodyModelPrefab = SyncCache.ContentPackProvider.contentPack.itemDefs.Find("popato_chisps").pickupModelPrefab;
+            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("popato_chisps").pickupModelPrefab;
             if (ItemBodyModelPrefab == null)
             {
                 Log.LogError(nameof(setIDR) + ": " + nameof(popato_chisps) + " ModelPrefab broke.");

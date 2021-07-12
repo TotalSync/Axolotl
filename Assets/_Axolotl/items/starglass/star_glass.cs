@@ -34,10 +34,10 @@ namespace Axolotl
         public override void SetHooks()
         {
             object item_def = new object();
-            if (SyncCache.ContentPackProvider.contentPack.itemDefs.Find("star_glass_dmg", out item_def))
+            if (AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass_dmg", out item_def))
             {
                 star_glass_dmg = ((ItemDef)item_def);
-                if (SyncCache.ContentPackProvider.contentPack.itemDefs.Find("star_glass_kills", out item_def))
+                if (AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass_kills", out item_def))
                 {
                     star_glass_kills = ((ItemDef)item_def);
                     //Function Hook for Star Glass
@@ -90,7 +90,7 @@ namespace Axolotl
 
         public override void setIDR()
         {
-            GameObject ItemBodyModelPrefab = SyncCache.ContentPackProvider.contentPack.itemDefs.Find("star_glass").pickupModelPrefab;
+            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass").pickupModelPrefab;
             if (ItemBodyModelPrefab == null)
             {
                 Log.LogError(nameof(setIDR) + ": " + nameof(star_glass) + " ModelPrefab broke.");

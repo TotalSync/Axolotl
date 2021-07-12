@@ -1,3 +1,9 @@
-
-Assets/ThunderKitSettings
+.git
+.gitignore
 ThunderKit
+
+Assets/**/*
+!Assets/_Axolotl
+!Assets/_Axolotl/**/*
+
+
