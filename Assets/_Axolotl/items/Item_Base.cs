@@ -11,7 +11,6 @@ namespace Axolotl
     [R2APISubmoduleDependency(nameof(LanguageAPI))]
     public abstract class Item_Base : MonoBehaviour
     {
-        CustomItem citem_def;
         public ItemDef item_def;
         public ItemDisplayRuleDict idr;
         public string pack_id;
@@ -32,7 +31,6 @@ namespace Axolotl
             this.pickup_long = "DEBUG_PICKUP";      
             this.desc_long = "DEBUG_DESC";
             this.lore_long = "DEBUG_LORE";
-            this.citem_def = new CustomItem(this.item_def, this.idr);
         }
         
         public Item_Base(string name) 
@@ -49,7 +47,6 @@ namespace Axolotl
             this.item_def = item_def;
             this.id = item_def.nameToken.ToUpper();
             this.idr = new ItemDisplayRuleDict();
-            this.citem_def = new CustomItem(this.item_def, this.idr);
             Log.LogError(nameof(Item_Base) + "This funtion ran");
         }
 

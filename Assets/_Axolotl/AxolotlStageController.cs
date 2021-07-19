@@ -12,104 +12,40 @@ namespace Axolotl
 {
     public static class AxolotlStageController
     {
-        private static AssetBundle bundle;
-        private static GameObject DebugPrefab;
-        private static GameObject SelectPrefab;
-        private static targetMultiShopController target_controller;
+
+        private static modShopSpawner shopSpawner;
 
 
 
-        public static void setHooks()
+        //This function sets up a check at the begining of each stage to see if
+        //The stage cachedName is our stage.
+        /*public static void setHooks()
         {
-            Log.LogError(nameof(initializeAxolotlStage) + ": " + Stage.instance.sceneDef.cachedName);
+            Log.LogDebug(nameof(initializeAxolotlStage) + ": " + Stage.instance.sceneDef.cachedName);
             if (Stage.instance.sceneDef.cachedName == "ShipShopStage")
             {
-                initializeAxolotlStage(Run.instance);
+                initializeAxolotlStage();
             }
-        }
+        }*/
 
+        //Redirect for loading asset bundles.
         public static bool loadAssetBundle()
         {
-            bool error_flag = false;
-            Log.LogWarning(nameof(AxolotlStageController) + " " + nameof(loadAssetBundle) + ": Attempting to Loading AB at " + BepInEx.Paths.PluginPath + "/Axolotl/InteractablePrefabs");
-            bundle = AssetBundle.LoadFromFile(BepInEx.Paths.PluginPath + "/Axolotl/InteractablePrefabs");
-            if (bundle == null)
-            {
-                Log.LogError(nameof(AxolotlStageController) + " " + nameof(loadAssetBundle) + ": Unable to load InteractablePrefab Bundle");
-                return !error_flag;
-            }
-            DebugPrefab = bundle.LoadAsset<GameObject>("DebugPrefab");
-            if (DebugPrefab == null)
-            {
-                Log.LogError(nameof(AxolotlStageController) + " " + nameof(loadAssetBundle) + ": Unable to load DebugPrefab.");
-                error_flag = true;
-            }
-            SelectPrefab = bundle.LoadAsset<GameObject>("SelectiveMultiShop");
-            if (SelectPrefab == null)
-            {
-                Log.LogError(nameof(AxolotlStageController) + " " + nameof(loadAssetBundle) + ": Unable to load SelectiveMultiShop.");
-                error_flag = true;
-            }
-            return error_flag;
+            shopSpawner = new modShopSpawner();
+            return shopSpawner.loadAssetBundle();
         }
 
-        public static bool initializeAxolotlStage(Run run)
+        
+
+        
+        public static bool initializeAxolotlStage()
         {
             bool error_flag = false;
-            GameObject[] foundLocations = getSpawnLocations("SelectChestSpawn");
-            List<Transform> transforms = new List<Transform>();
-            if (foundLocations != null)
-            {
-                foreach(var obj in foundLocations)
-                {
-                    if (obj == null)
-                    {
-                        Log.LogWarning(nameof(initializeAxolotlStage) + ": Skipping null Object in spawn list.");
-                    }
-                    /*else
-                    {
-                        transforms.Add(obj.transform);
-                    }*/
-                    
-                    else
-                    {
-                        var objt = GameObject.Instantiate(DebugPrefab, obj.transform);
-                        if (objt == null)
-                        {
-                            Log.LogError(nameof(initializeAxolotlStage) + ": Unable to spawn object at location.");
-                        }
-                        else
-                        {
-                            objt.SetActive(true);
-
-                            Log.LogInfo(nameof(initializeAxolotlStage) + ": Spawned Chest at Location");
-                        }
-                    }
-                    
-                }
-                
-                target_controller = new targetMultiShopController(transforms.ToArray());
-            } 
-            else 
-            {
-                Log.LogError(nameof(initializeAxolotlStage) + " Unable to spawn: Target Multishops");
-                error_flag = true;
-            }
+            shopSpawner.spawnShops();
             
             return error_flag;
         }
 
-        private static GameObject[] getSpawnLocations(string regex)
-        {
-            var objects = GameObject.FindGameObjectsWithTag("Chest");
-            for (int i = 0; i < objects.Length; i++)
-            {
-                if (!objects[i].name.StartsWith(regex))
-                {
-                    objects[i] = null;
-                }
-            }
-            return objects;
-        }
+        
     }
 }

@@ -1,10 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
+using System;
 using BepInEx;
 using R2API;
 using R2API.Utils;
 using RoR2;
+using RoR2.Stats;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Events;
@@ -14,7 +17,7 @@ namespace Axolotl
     [BepInDependency("com.bepis.r2api")]
     public class targetMultiShopController : NetworkBehaviour, IHologramContentProvider
     {
-        public selectiveDropTableController.ShopType type;
+        public ShopType type;
 
 		public GameObject terminalPrefab;
 				
@@ -37,9 +40,17 @@ namespace Axolotl
 		private Xoroshiro128Plus rng;
 
 
-        public targetMultiShopController(Transform[] transforms) 
+        public targetMultiShopController(Transform[] transforms, GameObject gameObject) 
 		{
-			this.terminalPositions = transforms;
+			this.terminalPrefab = gameObject;
+			this.terminalPositions = new Transform[3];
+			//Correction for root transform unintentionally added.
+			for (int i = 0; i < 3; i++)
+            {
+				this.terminalPositions[i] = transforms[i+1];
+            }
+			rollType();
+			rollRarity();
 			if (Run.instance)
 			{
 				this.rng = new Xoroshiro128Plus(Run.instance.treasureRng.nextUlong);
@@ -62,34 +73,6 @@ namespace Axolotl
 
 		}
 
-		/*
-        void Awake() 
-        {
-			if (NetworkServer.active)
-			{
-				this.rng = new Xoroshiro128Plus(Run.instance.treasureRng.nextUlong);
-				this.GenerateTerminals();
-			}       
-		}
-
-		private void Start()
-		{
-			if (Run.instance && NetworkServer.active)
-			{
-				this.Networkcost = Run.instance.GetDifficultyScaledCost(this.baseCost);
-				if (this.terminalGameObjects != null)
-				{
-					GameObject[] array = this.terminalGameObjects;
-					for (int i = 0; i < array.Length; i++)
-					{
-						PurchaseInteraction component = array[i].GetComponent<PurchaseInteraction>();
-						component.Networkcost = this.cost;
-						component.costType = this.costType;
-					}
-				}
-			}
-		}
-		*/
 		private void OnDestroy()
 		{
 			if (this.terminalGameObjects != null)
@@ -102,14 +85,8 @@ namespace Axolotl
 			}
 		}
 
-        // Update is called once per frame
-        void Update()
-        {
-
-        }
-
         //This will populate all of the designated locations with selectiveMultiShops
-        void GenerateTerminals()
+        private void GenerateTerminals()
         {
 			this.terminalGameObjects = new GameObject[this.terminalPositions.Length];
 			if (this.terminalPositions == null)
@@ -119,48 +96,114 @@ namespace Axolotl
             }
 			for (int i = 0; i < this.terminalPositions.Length; i++)
             {
-				PickupIndex pickupIndex = PickupIndex.none;
-				if (this.type == selectiveDropTableController.ShopType.VanillaEquip || this.type == selectiveDropTableController.ShopType.ModdedEquip)
-				{
-					pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableEquipmentDropList);
-				}
-				else
-				{
-					switch (this.itemTier)
-					{
-						case ItemTier.Tier1:
-							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir1DropList);
-							break;
-						case ItemTier.Tier2:
-							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir2DropList);
-							break;
-						case ItemTier.Tier3:
-							pickupIndex = this.rng.NextElementUniform<PickupIndex>(selectiveDropTableController.dropTables[(int)this.type].availableTeir3DropList);
-							break;
-					}
-				}
-				bool newHidden = this.hideDisplayContent && i != 0;
-				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(this.terminalPrefab,
-					this.terminalPositions[i].position, this.terminalPositions[i].rotation);
-				this.terminalGameObjects[i] = gameObject;
-				gameObject.GetComponent<targetMultiShopBehavior>().SetPickupIndex(pickupIndex, newHidden);
-				NetworkServer.Spawn(gameObject);
-            }
-			GameObject[] array = this.terminalGameObjects;
-			for (int i  = 0; i < array.Length; i++)
-            {
-				array[i].GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(this.DisableAllTerminals));
-			}
-        }
+				if ( terminalPositions[i] == null || terminalPositions[i].position == null )
+                {
+					Log.LogError(nameof(GenerateTerminals) + ": Terminal Position at: " + i + " is null.");
+					Log.LogError(terminalPositions[i].ToString() + " " + terminalPositions[i].ToString());
+                }
+                else
+                {
+					var dropList = selectiveDropTableController.getDropList(this.type, this.itemTier);
+					while (dropList == null)
+                    {
+						this.rollType();
+						this.rollRarity();
+						dropList = selectiveDropTableController.getDropList(this.type, this.itemTier);
+                    }
+					PickupIndex pickupIndex = this.rng.NextElementUniform<PickupIndex>(dropList);
 
-		private void DisableAllTerminals(Interactor interactor)
+					bool newHidden = this.hideDisplayContent && i != 0;
+					newHidden = rng.nextBool & newHidden;
+					if(terminalPrefab != null)
+                    {
+						GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(this.terminalPrefab,
+							this.terminalPositions[i].position, this.terminalPositions[i].rotation);
+						this.terminalGameObjects[i] = gameObject;
+                        if (selectiveDropTableController.isModded(this.type))
+                        {
+							gameObject.transform.Find("targetModEmbellishments").gameObject.SetActive(true);
+                        }
+						var component = gameObject.GetComponentInChildren<targetMultiShopBehavior>();
+						if (component != null)
+						{
+							component.SetPickupIndex(pickupIndex, newHidden);
+							component.controller = this;
+						}
+						else 
+						{
+							Log.LogError(nameof(GenerateTerminals) + ": Component not Found.");
+							
+							if (NetworkServer.active)
+							{
+								NetworkServer.Spawn(gameObject);
+							}	
+						}
+						gameObject.GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(gameObject.GetComponent<targetMultiShopBehavior>().purchaseCorrection));
+                    } 
+					else
+                    {
+						Log.LogError(nameof(GenerateTerminals) + ": Terminal Prefab is null");
+                    }
+                }
+            }
+        }
+		
+		public void DisableAllTerminals(GameObject caller)
 		{
 			foreach (GameObject gameObject in this.terminalGameObjects)
 			{
-				gameObject.GetComponent<PurchaseInteraction>().Networkavailable = false;
-				gameObject.GetComponent<targetMultiShopBehavior>().SetNoPickup();
+				if (gameObject != caller)
+                {
+					var purchase = gameObject.GetComponent<PurchaseInteraction>();
+					var behavior = gameObject.GetComponent<targetMultiShopBehavior>();
+					purchase.Networkavailable = false;
+					behavior.SetNoPickup();
+					//component.closeChestAnimation();
+                }
 			}
 			this.Networkavailable = false;
+		}
+
+		public void purchaseCorrection(Interactor activator, PurchaseInteraction interaction)
+		{
+			if (!interaction.CanBeAffordedByInteractor(activator))
+			{
+				return;
+			}
+			CharacterBody component = activator.GetComponent<CharacterBody>();
+			CostTypeDef costTypeDef = CostTypeCatalog.GetCostTypeDef(this.costType);
+			ItemIndex itemIndex = ItemIndex.None;
+			ShopTerminalBehavior component2 = base.GetComponent<ShopTerminalBehavior>();
+			if (component2)
+			{
+				PickupDef pickupDef = PickupCatalog.GetPickupDef(component2.CurrentPickupIndex());
+				itemIndex = ((pickupDef != null) ? pickupDef.itemIndex : ItemIndex.None);
+			}
+			CostTypeDef.PayCostResults payCostResults = costTypeDef.PayCost(this.cost, activator, base.gameObject, this.rng, itemIndex);
+			/*foreach (ItemIndex itemIndex2 in payCostResults.itemsTaken)
+			{
+				PurchaseInteraction.CreateItemTakenOrb(component.corePosition, base.gameObject, itemIndex2);
+				if (itemIndex2 != itemIndex)
+				{
+					Action<PurchaseInteraction, Interactor> action = PurchaseInteraction.onItemSpentOnPurchase;
+					if (action != null)
+					{
+						action(purchaseInteraction, activator);
+					}
+				}
+			}
+			foreach (EquipmentIndex arg in payCostResults.equipmentTaken)
+			{
+				Action<PurchaseInteraction, Interactor, EquipmentIndex> action2 = PurchaseInteraction.onEquipmentSpentOnPurchase;
+				if (action2 != null)
+				{
+					action2(purchaseInteraction, activator, arg);
+				}
+			}*/
+			IEnumerable<StatDef> statDefsToIncrement = interaction.purchaseStatNames.Select(new Func<string, StatDef>(StatDef.Find));
+			StatsSheetExposer.OnPurchase<IEnumerable<StatDef>>(component, this.costType, statDefsToIncrement);
+			interaction.onPurchase.Invoke(activator);
+			interaction.lastActivator = activator;
 		}
 
 
@@ -190,8 +233,22 @@ namespace Axolotl
 		{
 		}
 
+		private void rollRarity()
+        {
+            if (!selectiveDropTableController.isEquipment(this.type))
+            {
+				this.itemTier = selectiveDropTableController.rollItemRarity();	
+            }
+        }
 
-		public bool Networkavailable
+		private void rollType()
+        {
+			this.type = selectiveDropTableController.rollShopType();
+        }
+
+        #region Networking
+
+        public bool Networkavailable
 		{
 			get
 			{
@@ -269,7 +326,7 @@ namespace Axolotl
 				this.cost = (int)reader.ReadPackedUInt32();
 			}
 		}
+        #endregion
 
-		
-	}
+    }
 }

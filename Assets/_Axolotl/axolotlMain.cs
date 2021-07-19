@@ -119,16 +119,29 @@ namespace Axolotl
             Log.LogDebug(nameof(AxolotlStageController) + " " + nameof(Awake) + ": Setting Stage hook.");
 
 
-            AxolotlStageController.loadAssetBundle();
+            if (AxolotlStageController.loadAssetBundle())
+            {
+                Log.LogError(nameof(Awake) + " " + nameof(AxolotlStageController) + ": There was an error loading the shop asset bundles.");
+            }
+            //This Hook checks to see if the stage name is correct.
+            //If it is correct, it generates the stage.
             Stage.onStageStartGlobal += (stage) =>
             {
                 Log.LogDebug(nameof(AxolotlStageController.initializeAxolotlStage) + ": " + stage.sceneDef.cachedName);
                 if (stage.sceneDef.cachedName == "ShipShopStage")
                 {
-                    AxolotlStageController.initializeAxolotlStage(Run.instance);
+                    AxolotlStageController.initializeAxolotlStage();
                 }
             };
-             
+
+            //Thus initializes the drop tables to a 0 value for use later.
+            selectiveDropTableController.initializeDropTables();
+            //This Hook sets the drop table generation to the start of the run.
+            Run.onRunStartGlobal += (run) =>
+            {
+                selectiveDropTableController.generateDropTables();
+            };
+
 
             Log.LogInfo(nameof(Awake) + ": " + PluginName +" has Loaded.");
             return;

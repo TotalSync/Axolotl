@@ -8,7 +8,6 @@ using RoR2;
 namespace Axolotl {
 	public class targetMultiShopBehavior : NetworkBehaviour
 	{
-		selectiveDropTableController.ShopType shopType;
 
 		[SyncVar(hook = "OnSyncPickupIndex")]
 		private PickupIndex pickupIndex = PickupIndex.none;
@@ -27,6 +26,8 @@ namespace Axolotl {
 
 		[Tooltip("The drop table to select a pickup index from - only works if the pickup generates itself")]
 		public PickupDropTable dropTable;
+		
+		ShopType shopType;
 
 		[Tooltip("The tier of items to drop - only works if the pickup generates itself and the dropTable field is empty.")]
 		public ItemTier itemTier;
@@ -37,6 +38,8 @@ namespace Axolotl {
 		public Vector3 dropVelocity;
 
 		public Animator animator;
+		public PurchaseInteraction purchaseInteraction;
+		public targetMultiShopController controller;
 
 		public bool pickupIndexIsHidden
 		{
@@ -54,7 +57,8 @@ namespace Axolotl {
 				if (newHasBeenPurchased && this.animator)
 				{
 					int layerIndex = this.animator.GetLayerIndex("Body");
-					this.animator.PlayInFixedTime("Opening", layerIndex);
+					this.animator.PlayInFixedTime("ShieldUp", layerIndex);
+					this.controller.DisableAllTerminals(this.gameObject);
 				}
 			}
 		}
@@ -94,27 +98,7 @@ namespace Axolotl {
 				return;
 			}
 			PickupIndex newPickupIndex = PickupIndex.none;
-			List<PickupIndex> list;
-			if (this.shopType == selectiveDropTableController.ShopType.Modded || this.shopType == selectiveDropTableController.ShopType.Vanilla) { 
-				switch (this.itemTier)
-				{
-					case ItemTier.Tier1:
-						list = selectiveDropTableController.dropTables[(int)shopType].availableTeir1DropList;
-						break;
-					case ItemTier.Tier2:
-						list = selectiveDropTableController.dropTables[(int)shopType].availableTeir2DropList;
-						break;
-					case ItemTier.Tier3:
-						list = selectiveDropTableController.dropTables[(int)shopType].availableTeir3DropList;
-						break;
-					default:
-						throw new ArgumentOutOfRangeException();
-				}
-			} 
-			else
-            {
-				list = selectiveDropTableController.dropTables[(int)shopType].availableEquipmentDropList;
-            }
+			List<PickupIndex> list = selectiveDropTableController.getDropList(shopType, itemTier, false);
 			newPickupIndex = Run.instance.runRNG.NextElementUniform<PickupIndex>(list);
 			this.SetPickupIndex(newPickupIndex, false);
 		}
@@ -136,12 +120,17 @@ namespace Axolotl {
 			}
 			if (this.pickupIndex == PickupIndex.none)
 			{
-				Util.PlaySound("Play_UI_tripleChestShutter", base.gameObject);
-				if (this.animator)
-				{
-					int layerIndex = this.animator.GetLayerIndex("Body");
-					this.animator.PlayInFixedTime(this.hasBeenPurchased ? "Open" : "Closing", layerIndex);
-				}
+				closeChestAnimation();
+			}
+		}
+
+		public void closeChestAnimation()
+        {
+			//Util.PlaySound("Play_UI_tripleChestShutter", base.gameObject);
+			if (this.animator)
+			{
+				int layerIndex = this.animator.GetLayerIndex("Body");
+				this.animator.PlayInFixedTime("ShieldUp", layerIndex);
 			}
 		}
 
@@ -149,6 +138,14 @@ namespace Axolotl {
 		{
 			return this.pickupIndex;
 		}
+
+		public void purchaseCorrection(Interactor activator)
+		{
+			Log.Here();
+			this.controller.purchaseCorrection(activator, this.purchaseInteraction);
+		}
+
+		#region Networking
 
 		[Server]
 		public void SetNoPickup()
@@ -170,25 +167,14 @@ namespace Axolotl {
 				return;
 			}
 			this.SetHasBeenPurchased(true);
+			if(this.pickupIndex == null)
+            {
+				Log.LogWarning(nameof(DropPickup) + ": Pickup Index is empty.");
+				return;
+            }
 			PickupDropletController.CreatePickupDroplet(this.pickupIndex, (this.dropTransform ? this.dropTransform : base.transform).position, base.transform.TransformVector(this.dropVelocity));
 		}
-		/*
-		[CompilerGenerated]
-		private bool <GenerateNewPickupServer>g__PassesFilter|17_0(PickupIndex pickupIndex)
-		{
-			if (this.bannedItemTag == ItemTag.Any)
-			{
-			return true;
-		}
-		PickupDef pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
-			return pickupDef.itemIndex == ItemIndex.None || !ItemCatalog.GetItemDef(pickupDef.itemIndex).ContainsTag(this.bannedItemTag);
-	}
 
-	[CompilerGenerated]
-	private PickupIndex<GenerateNewPickupServer> g__Pick|17_1(List<PickupIndex> list)
-		{
-			return Run.instance.treasureRng.NextElementUniform<PickupIndex>(list.Where(new Func<PickupIndex, bool>(this.<GenerateNewPickupServer>g__PassesFilter|17_0)).ToList<PickupIndex>());
-	}*/
 
 		private void UNetVersion()
 		{
@@ -213,7 +199,7 @@ namespace Axolotl {
 			}
 		}
 
-		public bool Networkhidden
+        public bool Networkhidden
 		{
 			get
 			{
@@ -318,5 +304,6 @@ namespace Axolotl {
 				this.SetHasBeenPurchased(reader.ReadBoolean());
 			}
 		}
-	} 
+        #endregion
+    }
 }

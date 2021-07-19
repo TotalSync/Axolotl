@@ -1,10 +1,12 @@
 ﻿using BepInEx.Logging;
+using RoR2;
 
 namespace Axolotl
 {
     internal static class Log
     {
         internal static ManualLogSource _logSource;
+        internal static int debug_count = 0;
 
         internal static void Init(ManualLogSource logSource)
         {
@@ -32,6 +34,16 @@ namespace Axolotl
             //Log.LogInfo("IDR: " + item.idr.ToString());
             Log.LogDebug("----------------------------------\n");
             return true;
+        }
+        internal static void Here()
+        {
+            Log.LogWarning("Here at: " + debug_count);
+            debug_count++;
+        }
+
+        internal static void Here(Interactor interactor)
+        {
+            Here();
         }
     }
 }

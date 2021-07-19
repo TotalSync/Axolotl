@@ -11,6 +11,8 @@
 *.unity
 *.fbx
 *.obj
+*.anim
+*.controller
 
 .vs
 Library
