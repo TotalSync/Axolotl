@@ -9,8 +9,8 @@
     SubShader
     {
         Tags { "Queue" = "Transparent" "RenderType" = "Opaque" }
-        Blend SrcAlpha OneMinusSrcAlpha
-        //LOD 100
+        //This allows for transparency of objects in world
+        Blend SrcAlpha OneMinusSrcAlpha   
 
         Pass{
             Fog { Mode Off }
@@ -37,8 +37,8 @@
                     UNITY_VERTEX_INPUT_INSTANCE_ID
                 };
 
-                // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
-                // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
+                // Adds instancing support for this shader. Requires 'Enable Instancing' on materials that use the shader.
+                // See https://docs.unity3d.com/Manual/GPUInstancing.html
                 #pragma instancing_options assumeuniformscaling
                 UNITY_INSTANCING_BUFFER_START(Props)
                     UNITY_DEFINE_INSTANCED_PROP(half, _Alpha)
@@ -68,6 +68,7 @@
                     float instAlpha = UNITY_ACCESS_INSTANCED_PROP(Props, _Alpha);
                     float checker = (float) ((instAlpha == 0) * -1.0f);
                     clip(checker);
+                    //End of big disgusting
 
                     return fixed4(
                                 c.r, c.g, c.b, 

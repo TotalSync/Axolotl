@@ -6,32 +6,80 @@ using RoR2;
 
 namespace Axolotl
 {
-    [BepInDependency("com.bepis.r2api")]
-    [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(ItemAPI), nameof(PrefabAPI))]
-    public class tele_battery : Item_Base
-    {
-        // Start is called before the first frame update
-
-        public GameObject prefab;
-        private float tele_duration_offset = 0.1f;
+   [BepInDependency("com.bepis.r2api")]
+   [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(ItemAPI), nameof(PrefabAPI))]
+   public class tele_battery : Item_Base
+   {
+      public GameObject prefab;
+      private float tele_duration_offset = 0.1f;
 
 
-        public tele_battery(ItemDef item_def)
+      public tele_battery(ItemDef item_def)
+      {
+          base.item_def = item_def;
+          base.id = item_def.nameToken.ToUpper();
+          base.idr = new ItemDisplayRuleDict();
+          base.name_long = "Teleporter Battery";
+          base.pickup_long = "Charges the teleport by <style=cIsUtility>10%</style> <style=cStack>(Stacks Logrithmically)"
+                              + "</style> when it starts. <style=cIsUtility> It counts all players' batteries.</style>";
+          base.desc_long = "Charges the teleport by <style=cIsUtility>10%</style> <style=cStack>(Stacks Logrithmically)"
+                              + "</style> when it starts. <style=cIsUtility> It counts all players' batteries.</style>";
+          base.lore_long = " ";
+          //Log.LogError(nameof(star_glass) + "This funtion ran");
+      }
+
+      private bool preChargeTele(TeleporterInteraction tele)
         {
-            base.item_def = item_def;
-            base.id = item_def.nameToken.ToUpper();
-            base.idr = new ItemDisplayRuleDict();
-            base.name_long = "Teleporter Battery";
-            base.pickup_long = "Charges the teleport by <style=cIsUtility>10%</style> <style=cStack>(Stacks Logrithmically)"
-                                + "</style> when it starts. <style=cIsUtility> It counts all players' batteries.</style>";
-            base.desc_long = "Charges the teleport by <style=cIsUtility>10%</style> <style=cStack>(Stacks Logrithmically)"
-                                + "</style> when it starts. <style=cIsUtility> It counts all players' batteries.</style>";
-            base.lore_long = " ";
-            //Log.LogError(nameof(star_glass) + "This funtion ran");
+            int sum = 0;
+            foreach(var player in PlayerCharacterMasterController.instances) { 
+            
+                if (!player.master.IsDeadAndOutOfLivesServer())
+                {
+                    var body = player.master.GetBody();
+                    if(body != null)
+                    {
+                        var count = body.inventory.GetItemCount(this.item_def);
+                        if (count > 0)
+                        {
+                            Log.LogDebug(nameof(preChargeTele) + ": " + count + " number of batteries found on a player");
+                            sum += count;
+                        }
+                    }
+                }
+            }
+            Log.LogDebug(nameof(preChargeTele) + ": " + sum + "Batteries found in total.");
+            if (sum > 0)
+            {
+                tele.holdoutZoneController.Network_charge += (Mathf.Log10(sum)/2.5f) + tele_duration_offset;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
+      private void spawnItemDisplay()
+        {
+            var obj = GameObject.Find("TeleporterBeacon");
+            if (obj != null)
+            {
+                var prefab = Instantiate(AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab, obj.transform);
+                prefab.transform.rotation *= Quaternion.Euler(new Vector3(-90.0f, 0.0f, 75.0f));
+                prefab.transform.position += new Vector3(-2.38f, -0.85f, -4.84f);
+                prefab.transform.localScale /= prefab.transform.lossyScale.magnitude;
+                prefab.transform.localScale *= 100.0f;
+                Log.LogDebug(nameof(spawnItemDisplay) + ": teleporter origin at ( " + obj.transform.position.ToString() + " )");
+                Log.LogDebug(nameof(spawnItemDisplay) + ": spawning display at ( " + prefab.transform.position.ToString() + " )");
+                prefab.SetActive(true);
+            } else
+            {
+                Log.LogError(nameof(spawnItemDisplay) + ": Unable to Find Teleporter");
+            }
+        }
 
-        public override void setIDR()
+		#region Setup
+		public override void setIDR()
         {
             GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab;
             if (ItemBodyModelPrefab == null)
@@ -177,15 +225,15 @@ namespace Axolotl
             }
         }
 
-        public override void langInit()
+      public override void langInit()
         {
             LanguageAPI.Add(this.id, this.name_long);
             LanguageAPI.Add(this.id + "_PICKUP", this.pickup_long);
             LanguageAPI.Add(this.id + "_DESC", this.desc_long);
             LanguageAPI.Add(this.id + "_LORE", this.lore_long);
         }
-
-        public override void SetHooks()
+      
+      public override void SetHooks()
         {
             On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, action) => 
             {
@@ -199,61 +247,9 @@ namespace Axolotl
             };
         }
 
-        public override void initialize()
-        {
-            base.initialize();
-        }
+		#endregion
 
-        private void spawnItemDisplay()
-        {
-            var obj = GameObject.Find("TeleporterBeacon");
-            if (obj != null)
-            {
-                var prefab = Instantiate(AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("tele_battery").pickupModelPrefab, obj.transform);
-                prefab.transform.rotation *= Quaternion.Euler(new Vector3(-90.0f, 0.0f, 75.0f));
-                prefab.transform.position += new Vector3(-2.38f, -0.85f, -4.84f);
-                prefab.transform.localScale /= prefab.transform.lossyScale.magnitude;
-                prefab.transform.localScale *= 100.0f;
-                Log.LogDebug(nameof(spawnItemDisplay) + ": teleporter origin at ( " + obj.transform.position.ToString() + " )");
-                Log.LogDebug(nameof(spawnItemDisplay) + ": spawning display at ( " + prefab.transform.position.ToString() + " )");
-                prefab.SetActive(true);
-            } else
-            {
-                Log.LogError(nameof(spawnItemDisplay) + ": Unable to Find Teleporter");
-            }
-        }
+	}
 
-        private bool preChargeTele(TeleporterInteraction tele)
-        {
-            int sum = 0;
-            foreach(var player in PlayerCharacterMasterController.instances) { 
-            
-                if (!player.master.IsDeadAndOutOfLivesServer())
-                {
-                    var body = player.master.GetBody();
-                    if(body != null)
-                    {
-                        var count = body.inventory.GetItemCount(this.item_def);
-                        if (count > 0)
-                        {
-                            Log.LogDebug(nameof(preChargeTele) + ": " + count + " number of batteries found on a player");
-                            sum += count;
-                        }
-                    }
-                }
-            }
-            Log.LogDebug(nameof(preChargeTele) + ": " + sum + "Batteries found in total.");
-            if (sum > 0)
-            {
-                tele.holdoutZoneController.Network_charge += (Mathf.Log10(sum)/2.5f) + tele_duration_offset;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
 
-    
 }

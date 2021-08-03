@@ -6,32 +6,66 @@ using UnityEngine;
 
 namespace Axolotl
 {
-    [BepInDependency("com.bepis.r2api")]
-    [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(RecalculateStatsAPI))]
-    public class star_glass : Item_Base
-    {
+   [BepInDependency("com.bepis.r2api")]
+   [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(RecalculateStatsAPI))]
+   public class star_glass : Item_Base
+   {
+      //These items are counter items to help keep track of require stats
+      private static ItemDef star_glass_kills;
+      private static ItemDef star_glass_dmg;
 
-        private static ItemDef star_glass_kills;
-        private static ItemDef star_glass_dmg;
-
-        private int star_kill_threshold = 10;
-        private float star_kill_bonus = .1f;
+      private int star_kill_threshold = 10;
+      private float star_kill_bonus = .1f;
 
 
-        public star_glass(ItemDef item_def)
+      public star_glass(ItemDef item_def)
+      {
+          base.item_def = item_def;
+          base.id = item_def.nameToken.ToUpper();
+          base.idr = new ItemDisplayRuleDict();
+          this.name_long = base.name_long = "Star Glass";
+          base.pickup_long = "Kills increase <style=cIsDamage>base damage</style> by <style=cIsDamage>0.1</style> <style=cStack>(+0.1 per stack)</style> for every <style=cIsDamage>10enemieskilled.</stlye>";
+          base.desc_long = "Kills increase <style=cIsDamage>base damage</style> by <style=cIsDamage>0.1</style> <style=cStack>(+0.1 per stack)</style> for every <style=cIsDamage>10 enemieskilled.<stlye>";
+          base.lore_long = "The remains of a celesitial body which entered the atmosphere of a distant planet. Many would kill for this. Its luster and beauty are"
+                          + " hard to compare. Its no wonder the stories of pointed to these objects as ones of great power. Listening close to it you can hear a "
+                          + "faint hum. The people of old believed that consuming these fallen stars brought unimaginable power. Little did they know of its impact...";
+      }
+      private void glassUpdateDamage(CharacterBody body, RecalculateStatsAPI.StatHookEventArgs args)
         {
-            base.item_def = item_def;
-            base.id = item_def.nameToken.ToUpper();
-            base.idr = new ItemDisplayRuleDict();
-            this.name_long = base.name_long = "Star Glass";
-            base.pickup_long = "Kills increase <style=cIsDamage>base damage</style> by <style=cIsDamage>0.1</style> <style=cStack>(+0.1 per stack)</style> for every <style=cIsDamage>10 enemies killed.</stlye>";
-            base.desc_long = "Kills increase <style=cIsDamage>base damage</style> by <style=cIsDamage>0.1</style> <style=cStack>(+0.1 per stack)</style> for every <style=cIsDamage>10 enemies killed.</stlye>";
-            base.lore_long = "The remains of a celesitial body which entered the atmosphere of a distant planet. Many would kill for this. Its luster and beauty are"
-                            + " hard to compare. Its no wonder the stories of pointed to these objects as ones of great power. Listening close to it you can hear a "
-                            + "faint hum. The people of old believed that consuming these fallen stars brought unimaginable power. Little did they know of its impact...";
+            if (body == null || body.inventory == null)
+            {
+                return;
+            }
+            else
+            {
+                int item_count = body.inventory.GetItemCount(this.item_def);
+                int dmg_count = body.inventory.GetItemCount(star_glass_dmg);
+                args.baseDamageAdd += (star_kill_bonus * dmg_count * item_count);
+            }
+            return;
+        }
+      private void glassUpdateCount(DamageReport report)
+        {
+            if (!report.attacker || !report.attackerBody)
+            {
+                return;
+            }
+            int count = report.attackerBody.inventory.GetItemCount(this.item_def);
+            if (count != 0)
+            {
+                report.attackerBody.inventory.GiveItem(star_glass_kills);
+                int kill_count = report.attackerBody.inventory.GetItemCount(star_glass_kills);
+                if (kill_count >= star_kill_threshold)
+                {
+                    report.attackerBody.inventory.GiveItem(star_glass_dmg);
+                    report.attackerBody.inventory.RemoveItem(star_glass_kills, 10);
+                }
+            }
         }
 
-        public override void SetHooks()
+		#region Setup
+
+		public override void SetHooks()
         {
             object item_def = new object();
             if (AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass_dmg", out item_def))
@@ -55,50 +89,18 @@ namespace Axolotl
 
         }
 
-        private void glassUpdateDamage(CharacterBody body, RecalculateStatsAPI.StatHookEventArgs args)
-        {
-            if (body == null || body.inventory == null)
-            {
-                return;
-            }
-            else
-            {
-                int item_count = body.inventory.GetItemCount(this.item_def);
-                int dmg_count = body.inventory.GetItemCount(star_glass_dmg);
-                args.baseDamageAdd += (star_kill_bonus * dmg_count * item_count);
-            }
-            return;
-        }
-        private void glassUpdateCount(DamageReport report)
-        {
-            if (!report.attacker || !report.attackerBody)
-            {
-                return;
-            }
-            int count = report.attackerBody.inventory.GetItemCount(this.item_def);
-            if (count != 0)
-            {
-                report.attackerBody.inventory.GiveItem(star_glass_kills);
-                int kill_count = report.attackerBody.inventory.GetItemCount(star_glass_kills);
-                if (kill_count >= star_kill_threshold)
-                {
-                    report.attackerBody.inventory.GiveItem(star_glass_dmg);
-                    report.attackerBody.inventory.RemoveItem(star_glass_kills, 10);
-                }
-            }
-        }
-
-        public override void setIDR()
-        {
-            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass").pickupModelPrefab;
-            if (ItemBodyModelPrefab == null)
-            {
-                Log.LogError(nameof(setIDR) + ": " + nameof(star_glass) + " ModelPrefab broke.");
-            }
-            else
-            {
-                ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
-                idr.Add("mdlCommandoDualies", new RoR2.ItemDisplayRule[]
+      public override void setIDR()
+      {
+         GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("star_glass").pickupModelPrefab;
+         if (ItemBodyModelPrefab == null)
+         {
+             Log.LogError(nameof(setIDR) + ": " + nameof(star_glass) + " ModelPrefab broke.");
+         }
+         else
+         {
+            ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
+			   #region IDRs
+				idr.Add("mdlCommandoDualies", new RoR2.ItemDisplayRule[]
                 {
                     new ItemDisplayRule
                     {
@@ -230,24 +232,20 @@ namespace Axolotl
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
                 });
-                //Log.LogInfo(nameof(star_glass) + nameof(setIDR) + " new IDR data set.");
-            }
+				//Log.LogInfo(nameof(star_glass) + nameof(setIDR) + " new IDR data set.");
+				#endregion
+			}
 
-        }
+		}
 
-        public override void initialize()
-        {
-            base.initialize();
-        }
+      public override void langInit()
+      {
+         LanguageAPI.Add(this.id, this.name_long);
+         LanguageAPI.Add(this.id + "_PICKUP", this.pickup_long);
+         LanguageAPI.Add(this.id + "_DESC", this.desc_long);
+         LanguageAPI.Add(this.id + "_LORE", this.lore_long);
+      }
+		#endregion
 
-        public override void langInit()
-        {
-            LanguageAPI.Add(this.id, this.name_long);
-            LanguageAPI.Add(this.id + "_PICKUP", this.pickup_long);
-            LanguageAPI.Add(this.id + "_DESC", this.desc_long);
-            LanguageAPI.Add(this.id + "_LORE", this.lore_long);
-        }
-
-
-    }
+	}
 }

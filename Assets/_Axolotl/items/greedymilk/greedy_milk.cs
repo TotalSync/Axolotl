@@ -7,33 +7,54 @@ using UnityEngine;
 
 namespace Axolotl
 {
-    [BepInDependency("com.bepis.r2api")]
-    [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(ItemAPI))]
-    public class greedy_milk : Item_Base
-    {
-        // Start is called before the first frame update
+   [BepInDependency("com.bepis.r2api")]
+   [R2APISubmoduleDependency(nameof(LanguageAPI), nameof(ItemAPI))]
+   public class greedy_milk : Item_Base
+   {
+      private float milk_level_health_gain = 5.0f;
+      private float milk_inital_level_health = 0.0f;
+      private bool milk_have_inital_level_health = false;
 
-        private float milk_level_health_gain = 5.0f;
-        private float milk_inital_level_health = 0.0f;
-        private bool milk_have_inital_level_health = false;
+      public greedy_milk(ItemDef item_def) 
+      {
+         this.item_def = item_def;
+         id = item_def.nameToken.ToUpper();
+         idr = new ItemDisplayRuleDict();
+         name_long = "Greedy Milk";
+         pickup_long = "Increases <style=cIsHealth>Max Health</style> per level by <style=cIsHealth>+5</style> <style=cStack>(+5 per stack)"
+                                 + "</style> for every level past level 1. <style=cIsUtility>This works retroactively.</style>";
+         desc_long = "Increases <style=cIsHealth>Max Health</style> per level by <style=cIsHealth>+5</style> <style=cStack>(+5 per stack)"
+                                 + "</style> for every level past level 1. <style=cIsUtility>This works retroactively.</style>";
+         lore_long = "A sargent in the nearby space fleet was known for acts of arson to whatever planet he laid eyes upon.\n"
+                                  + "Its was said that his favorite tool was something he called his greedy milk. Many children felt the burn of this cruel substence.\n";
+      }
+		private void milkHealthUpdate(CharacterBody body)
+      {
+         if (body != null)
+         {
+             if (body.inventory != null)
+             { 
+                 int item_count = body.inventory.GetItemCount(this.item_def);
+                 if (item_count != 0)
+                 {
+                     if (milk_have_inital_level_health)
+                     {
+                         body.levelMaxHealth = (milk_level_health_gain * item_count) + milk_inital_level_health;
+                     }
+                     else
+                     {
+                         milk_have_inital_level_health = true;
+                         milk_inital_level_health = body.levelMaxHealth;
+                         body.levelMaxHealth = (milk_level_health_gain * item_count) + milk_inital_level_health;
+                     }
+                 }
+             }
+         }
+         return;
+      }
 
-        public greedy_milk(ItemDef item_def) 
-        {
-            this.item_def = item_def;
-            id = item_def.nameToken.ToUpper();
-            idr = new ItemDisplayRuleDict();
-            name_long = "Greedy Milk";
-            pickup_long = "Increases <style=cIsHealth>Max Health</style> per level by <style=cIsHealth>+5</style> <style=cStack>(+5 per stack)"
-                                    + "</style> for every level past level 1. <style=cIsUtility>This works retroactively.</style>";
-            desc_long = "Increases <style=cIsHealth>Max Health</style> per level by <style=cIsHealth>+5</style> <style=cStack>(+5 per stack)"
-                                    + "</style> for every level past level 1. <style=cIsUtility>This works retroactively.</style>";
-            lore_long = "A sargent in the nearby space fleet was known for acts of arson to whatever planet he laid eyes upon.\n"
-                                    + "Its was said that his favorite tool was something he called his greedy milk. Many children felt the burn of this cruel substence.\n";
-            //Log.LogError(nameof(star_glass) + "This funtion ran");
-        }
-
-        
-        public override void setIDR()
+		#region Setup
+		public override void setIDR()
         {
             GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("greedy_milk").pickupModelPrefab;
             if (ItemBodyModelPrefab == null) {
@@ -41,7 +62,8 @@ namespace Axolotl
             } 
             else
             {
-                ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
+				#region IDRs
+				ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
                 idr.Add("mdlCommandoDualies", new RoR2.ItemDisplayRule[]
                 {
                     new ItemDisplayRule
@@ -174,12 +196,13 @@ namespace Axolotl
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
                 });
-                //Log.LogInfo(nameof(greedy_milk) + nameof(setIDR) + " new IDR data set.");
-            }
-            //Log.LogError(nameof(setIDR) + ": Could not set new IDR.");
-        }
+				#endregion
+				//Log.LogInfo(nameof(greedy_milk) + nameof(setIDR) + " new IDR data set.");
+			}
+			//Log.LogError(nameof(setIDR) + ": Could not set new IDR.");
+		}
 
-        public override void SetHooks()
+      public override void SetHooks()
         {
             //Function Hook for Greedy Milk
             On.RoR2.CharacterBody.RecalculateStats += (orig, self) =>
@@ -192,7 +215,7 @@ namespace Axolotl
             };
         }
 
-        public override void langInit()
+      public override void langInit()
         {
             LanguageAPI.Add(this.id, this.name_long);
             LanguageAPI.Add(this.id + "_PICKUP", this.pickup_long);
@@ -201,29 +224,6 @@ namespace Axolotl
             //Log.LogError(nameof(greedy_milk) + nameof(langInit) + "This funtion ran");
         }
 
-        private void milkHealthUpdate(CharacterBody body)
-        {
-            if (body != null)
-            {
-                if (body.inventory != null)
-                { 
-                    int item_count = body.inventory.GetItemCount(this.item_def);
-                    if (item_count != 0)
-                    {
-                        if (milk_have_inital_level_health)
-                        {
-                            body.levelMaxHealth = (milk_level_health_gain * item_count) + milk_inital_level_health;
-                        }
-                        else
-                        {
-                            milk_have_inital_level_health = true;
-                            milk_inital_level_health = body.levelMaxHealth;
-                            body.levelMaxHealth = (milk_level_health_gain * item_count) + milk_inital_level_health;
-                        }
-                    }
-                }
-            }
-            return;
-        }
-    }
+		#endregion
+   }
 }

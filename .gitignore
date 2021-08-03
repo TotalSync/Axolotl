@@ -13,6 +13,11 @@
 *.obj
 *.anim
 *.controller
+*.manifest
+*.mesh
+*.tif
+*.physicMaterial
+*.mask
 
 .vs
 Library

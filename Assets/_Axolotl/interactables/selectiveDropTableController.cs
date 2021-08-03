@@ -243,14 +243,14 @@ namespace Axolotl
                             {
                                 if (item != null)
                                 {
-                                    Log.LogDebug((isModded((ShopType)i) ? "Modded" : "Vanilla") +
+                                    Log.LogDebug(((i == 1) ? "Modded" : "Vanilla") +
                                         " " + (isEquipment((ShopType)j) ? "Equipment" : "Item") +
                                         " " + (ItemTier)k +
                                         ": Item : " + PickupCatalog.GetPickupDef(item).nameToken);
                                 }
                                 else
                                 {
-                                    Log.LogError("Error Drop Table List is empty: " + (isModded((ShopType)i) ? "Modded" : "Vanilla") +
+                                    Log.LogError("Error Drop Table List is empty: " + ((i == 1) ? "Modded" : "Vanilla") +
                                         " " + (isEquipment((ShopType)j) ? "Equipment" : "Item") +
                                         " " + (ItemTier)k);
                                 }
@@ -265,14 +265,14 @@ namespace Axolotl
                             {
                                 if (equip != null)
                                 {
-                                    Log.LogDebug((isModded((ShopType)i) ? "Modded" : "Vanilla") +
+                                    Log.LogDebug(((i == 1) ? "Modded" : "Vanilla") +
                                         " " + (isEquipment((ShopType)j) ? "Equipment" : "Item") +
                                         " " + (k == 0 ? "Normal" : "Lunar") +
                                         ": Equipment : " + PickupCatalog.GetPickupDef(equip).nameToken);
                                 }
                                 else
                                 {
-                                    Log.LogError("Error Drop Table List is empty: " + (isModded((ShopType)i) ? "Modded" : "Vanilla") +
+                                    Log.LogError("Error Drop Table List is empty: " + ((i == 1) ? "Modded" : "Vanilla") +
                                         " " + (isEquipment((ShopType)j) ? "Equipment" : "Item") +
                                         " " + (k == 0 ? "Normal" : "Lunar"));
                                 }

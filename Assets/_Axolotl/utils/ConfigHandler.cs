@@ -10,11 +10,9 @@ namespace Axolotl
     [BepInDependency("com.bepis.r2api")]
     public class ConfigHandler : MonoBehaviour
     {
-        // TODO: integrate item balance values into the cfg.
 
         private static ConfigFile config { get; set; }
         private List<string> item_ban_list = new List<string>();
-        //private List<ConfigEntry<bool>> entry_list = new List<ConfigEntry<bool>>();
         
         private static string item_section = "Item Section";
         //private static string item_enable = "Enable Item";

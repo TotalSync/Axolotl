@@ -7,68 +7,66 @@ using RoR2;
 
 namespace Axolotl
 {
-    [BepInDependency("com.bepis.r2api")]
-    [R2APISubmoduleDependency(nameof(ItemAPI), nameof(RecalculateStatsAPI))]
-    public class popato_chisps : Item_Base
-    {
-        // Start is called before the first frame update
- 
-        private static float popato_damage_bonus = 0.1f;
-        private static float popato_health_bonus = 10.0f;
-        private static float popato_health_threshold = 500.0f;
+   [BepInDependency("com.bepis.r2api")]
+   [R2APISubmoduleDependency(nameof(ItemAPI), nameof(RecalculateStatsAPI))]
+   public class popato_chisps : Item_Base
+   {
+      private static float popato_damage_bonus = 0.1f;
+      private static float popato_health_bonus = 10.0f;
+      private static float popato_health_threshold = 400.0f;
 
-        public popato_chisps(ItemDef item_def)
-        {
-            this.item_def = item_def;
-            id = item_def.nameToken.ToUpper();
-            idr = new ItemDisplayRuleDict();
-            name_long = "Popato Chisps";
-            pickup_long = "Increases <style=cIsHealth> Max Health </style> by <style=cIsHealth> +"
-                     + popato_health_bonus + "</style> <style=cStack>(+" + popato_health_bonus + " per stack)</style> and increases <style=cIsDamage>Base Damage</style> by +<style=cIsDamage>"
-                     + popato_damage_bonus + "</style> <style=cStack>(+" + popato_damage_bonus + " per stack)</style> for every <style=cIsHealth>"
-                     + popato_health_threshold + " Max Health</style> you have.";
-            desc_long = "Increases <style=cIsHealth> Max Health </style> by <style=cIsHealth> +"
-                     + popato_health_bonus + "</style> <style=cStack>(+" + popato_health_bonus + " per stack)</style> and increases <style=cIsDamage>Base Damage</style> by +<style=cIsDamage>"
-                     + popato_damage_bonus + "</style> <style=cStack>(+" + popato_damage_bonus + " per stack)</style> for every <style=cIsHealth>"
-                     + popato_health_threshold + " Max Health</style> you have.";
-            lore_long = " ";
-        }
-        
-        public override void SetHooks()
-        {
-            
-            R2API.RecalculateStatsAPI.GetStatCoefficients += (body, args) =>
-            {
-                updateHealthDamageInc(body, args);
-            };
-            
-        }
-        
-        private void updateHealthDamageInc(CharacterBody body, RecalculateStatsAPI.StatHookEventArgs args)
-        {
-            if (body == null || body.inventory == null)
-            {
-                return;
-            }
-            var count = body.inventory.GetItemCount(this.item_def);
-            args.baseDamageAdd = (float)Math.Truncate(body.maxHealth / 200.0f) * (.1f * count);
-            args.baseHealthAdd = count * 10.0f;
-        }
+      public popato_chisps(ItemDef item_def)
+      {
+         this.item_def = item_def;
+         id = item_def.nameToken.ToUpper();
+         idr = new ItemDisplayRuleDict();
+         name_long = "Popato Chisps";
+         pickup_long = "Increases <style=cIsHealth> Max Health </style> by <style=cIsHealth> +"
+                  + popato_health_bonus + "</style> <style=cStack>(+" + popato_health_bonus + " per stack)</style> and increases <style=cIsDamage>Base Damage</style> by +<style=cIsDamage>"
+                  + popato_damage_bonus + "</style> <style=cStack>(+" + popato_damage_bonus + " per stack)</style> for every <style=cIsHealth>"
+                  + popato_health_threshold + " Max Health</style> you have.";
+         desc_long = "Increases <style=cIsHealth> Max Health </style> by <style=cIsHealth> +"
+                  + popato_health_bonus + "</style> <style=cStack>(+" + popato_health_bonus + " per stack)</style> and increases <style=cIsDamage>Base Damage</style> by +<style=cIsDamage>"
+                  + popato_damage_bonus + "</style> <style=cStack>(+" + popato_damage_bonus + " per stack)</style> for every <style=cIsHealth>"
+                  + popato_health_threshold + " Max Health</style> you have.";
+         lore_long = " ";
+      }
+      private void updateHealthDamageInc(CharacterBody body, RecalculateStatsAPI.StatHookEventArgs args)
+      {
+         if (body == null || body.inventory == null)
+         {
+            return;
+         }
+         var count = body.inventory.GetItemCount(this.item_def);
+         args.baseDamageAdd = (float)Math.Truncate(body.maxHealth / popato_health_threshold) * (popato_damage_bonus * count);
+         args.baseHealthAdd = count * popato_health_bonus;
+      }
 
+      #region Setup
+      public override void SetHooks()
+      {
 
-        public override void setIDR()
-        {
-            GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("popato_chisps").pickupModelPrefab;
-            if (ItemBodyModelPrefab == null)
-            {
-                Log.LogError(nameof(setIDR) + ": " + nameof(popato_chisps) + " ModelPrefab broke.");
-            }
-            else
-            {
-                ItemBodyModelPrefab.transform.localScale /= ItemBodyModelPrefab.transform.lossyScale.magnitude;
-                ItemBodyModelPrefab.transform.rotation *= Quaternion.Euler(new Vector3(90, 0, 0));
-                ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
-                idr.Add("mdlCommandoDualies", new RoR2.ItemDisplayRule[]
+         R2API.RecalculateStatsAPI.GetStatCoefficients += (body, args) =>
+         {
+            updateHealthDamageInc(body, args);
+         };
+
+      }
+
+      public override void setIDR()
+      {
+         GameObject ItemBodyModelPrefab = AxolotlShop.ContentPackProvider.contentPack.itemDefs.Find("popato_chisps").pickupModelPrefab;
+         if (ItemBodyModelPrefab == null)
+         {
+            Log.LogError(nameof(setIDR) + ": " + nameof(popato_chisps) + " ModelPrefab broke.");
+         }
+         else
+         {
+            ItemBodyModelPrefab.transform.localScale /= ItemBodyModelPrefab.transform.lossyScale.magnitude;
+            ItemBodyModelPrefab.transform.rotation *= Quaternion.Euler(new Vector3(90, 0, 0));
+            ItemBodyModelPrefab.AddComponent<RoR2.ItemDisplay>();
+            #region IDRs
+            idr.Add("mdlCommandoDualies", new RoR2.ItemDisplayRule[]
                 {
                     new ItemDisplayRule
                     {
@@ -80,8 +78,8 @@ namespace Axolotl
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
                 });
-                idr.Add("mdlHuntress", new ItemDisplayRule[]
-                {
+            idr.Add("mdlHuntress", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -91,9 +89,9 @@ namespace Axolotl
                         localAngles = new Vector3(349.5154F, 249.8436F, 356.0982F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlToolbot", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlToolbot", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -103,9 +101,9 @@ namespace Axolotl
                         localAngles = new Vector3(315.5635F, 233.7695F, 325.0397F),
                         localScale = new Vector3(0.4F, 0.4F, 0.4F)
                     }
-                });
-                idr.Add("mdlEngi", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlEngi", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -115,9 +113,9 @@ namespace Axolotl
                         localAngles = new Vector3(0F, 45F, 0F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlMage", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlMage", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -127,9 +125,9 @@ namespace Axolotl
                         localAngles = new Vector3(65.67441F, 179.3688F, 178.9807F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlMerc", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlMerc", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -139,9 +137,9 @@ namespace Axolotl
                         localAngles = new Vector3(43.23627F, 103.2376F, 110.1412F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlTreebot", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlTreebot", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -151,9 +149,9 @@ namespace Axolotl
                         localAngles = new Vector3(0F, 0F, 270.8968F),
                         localScale = new Vector3(0.2F, 0.2F, 0.2F)
                     }
-                });
-                idr.Add("mdlLoader", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlLoader", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -163,9 +161,9 @@ namespace Axolotl
                         localAngles = new Vector3(21.1155F, 187.0388F, 129.261F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlCroco", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlCroco", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -175,9 +173,9 @@ namespace Axolotl
                         localAngles = new Vector3(46.47424F, 0.03554F, 0.12109F),
                         localScale = new Vector3(0.4F, 0.4F, 0.4F)
                     }
-                });
-                idr.Add("mdlCaptain", new ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlCaptain", new ItemDisplayRule[]
+            {
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -187,9 +185,9 @@ namespace Axolotl
                         localAngles = new Vector3(351.6593F, 184.1165F, 180.3262F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-                idr.Add("mdlBandit2", new RoR2.ItemDisplayRule[]
-                {
+            });
+            idr.Add("mdlBandit2", new RoR2.ItemDisplayRule[]
+            {
                     new RoR2.ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
@@ -199,10 +197,13 @@ namespace Axolotl
                         localAngles = new Vector3(17.62127F, 109.7287F, 208.814F),
                         localScale = new Vector3(0.05F, 0.05F, 0.05F)
                     }
-                });
-            }
-        }
+            });
+            #endregion
+
+         }
 
 
-    }
+      }
+      #endregion
+   }
 }

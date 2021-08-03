@@ -1,12 +1,11 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using RoR2;
 
 namespace Axolotl {
-	public class targetMultiShopBehavior : NetworkBehaviour
+	public class TargetMultiShopBehaviour : NetworkBehaviour
 	{
 
 		[SyncVar(hook = "OnSyncPickupIndex")]
@@ -16,7 +15,7 @@ namespace Axolotl {
 		private bool hidden;
 
 		[SyncVar(hook = "SetHasBeenPurchased")]
-		private bool hasBeenPurchased;
+		private bool hasBeenPurchased = false;
 
 		[Tooltip("The PickupDisplay component that should show which item this shop terminal is offering.")]
 		public PickupDisplay pickupDisplay;
@@ -27,7 +26,7 @@ namespace Axolotl {
 		[Tooltip("The drop table to select a pickup index from - only works if the pickup generates itself")]
 		public PickupDropTable dropTable;
 		
-		ShopType shopType;
+		private ShopType shopType;
 
 		[Tooltip("The tier of items to drop - only works if the pickup generates itself and the dropTable field is empty.")]
 		public ItemTier itemTier;
@@ -39,52 +38,23 @@ namespace Axolotl {
 
 		public Animator animator;
 		public PurchaseInteraction purchaseInteraction;
-		public targetMultiShopController controller;
+		public TargetMultiShopController controller = null;
 
-		public bool pickupIndexIsHidden
-		{
-			get
-			{
-				return this.hidden;
-			}
-		}
-
-		public void SetHasBeenPurchased(bool newHasBeenPurchased)
-		{
-			if (this.hasBeenPurchased != newHasBeenPurchased)
-			{
-				this.NetworkhasBeenPurchased = newHasBeenPurchased;
-				if (newHasBeenPurchased && this.animator)
-				{
-					int layerIndex = this.animator.GetLayerIndex("Body");
-					this.animator.PlayInFixedTime("ShieldUp", layerIndex);
-					this.controller.DisableAllTerminals(this.gameObject);
-				}
-			}
-		}
-
-		private void OnSyncHidden(bool newHidden)
-		{
-			this.SetPickupIndex(this.pickupIndex, newHidden);
-		}
-
-		private void OnSyncPickupIndex(PickupIndex newPickupIndex)
-		{
-			this.SetPickupIndex(newPickupIndex, this.hidden);
-			if (NetworkClient.active)
-			{
-				this.UpdatePickupDisplayAndAnimations();
-			}
-		}
 
 		public void Start()
 		{
 			if (NetworkClient.active)
 			{
 				this.UpdatePickupDisplayAndAnimations();
+				this.controller = gameObject.transform.parent.parent.GetComponent<TargetMultiShopController>();
+				if (this.controller == null)
+				{
+					Log.LogError("Controller Equals Null at " + nameof(Start) + " Even after attempting the new find.");
+				}
 			}
 		}
 
+		//This function does nothing at the moment. I included it because I was not sure if it would be needed again.
 		[Server]
 		public void GenerateNewPickupServer()
 		{
@@ -103,14 +73,6 @@ namespace Axolotl {
 			this.SetPickupIndex(newPickupIndex, false);
 		}
 
-		public void SetPickupIndex(PickupIndex newPickupIndex, bool newHidden = false)
-		{
-			if (this.pickupIndex != newPickupIndex || this.hidden != newHidden)
-			{
-				this.NetworkpickupIndex = newPickupIndex;
-				this.Networkhidden = newHidden;
-			}
-		}
 
 		private void UpdatePickupDisplayAndAnimations()
 		{
@@ -133,19 +95,71 @@ namespace Axolotl {
 				this.animator.PlayInFixedTime("ShieldUp", layerIndex);
 			}
 		}
+		public void purchaseCorrection(Interactor activator)
+		{
+			this.controller.purchaseCorrection(activator, this.purchaseInteraction, this);
+		}
+
+		#region Networking
+		#region Networking Helpers
+		public void SetPickupIndex(PickupIndex newPickupIndex, bool newHidden = false)
+		{
+			if (this.pickupIndex != newPickupIndex || this.hidden != newHidden)
+			{
+				this.NetworkpickupIndex = newPickupIndex;
+				this.Networkhidden = newHidden;
+			}
+		}
 
 		public PickupIndex CurrentPickupIndex()
 		{
 			return this.pickupIndex;
 		}
 
-		public void purchaseCorrection(Interactor activator)
+		public bool pickupIndexIsHidden
 		{
-			Log.Here();
-			this.controller.purchaseCorrection(activator, this.purchaseInteraction);
+			get
+			{
+				return this.hidden;
+			}
 		}
 
-		#region Networking
+		public void SetHasBeenPurchased(bool newHasBeenPurchased)
+		{
+			Log.LogDebug("Setting Shop To Purchased To: " + newHasBeenPurchased);
+			if (this.hasBeenPurchased != newHasBeenPurchased)
+			{
+				this.NetworkhasBeenPurchased = newHasBeenPurchased;
+				if (newHasBeenPurchased)
+				{
+					this.closeChestAnimation();
+					if (this.controller != null)
+					{
+						this.controller.DisableAllTerminals(gameObject);
+					}
+					else
+					{
+						Log.LogError(nameof(SetHasBeenPurchased) + ": Unable to retrieve parent object to call DisableAllTerminals");
+					}
+				}
+			}
+		}
+
+
+
+		private void OnSyncHidden(bool newHidden)
+		{
+			this.SetPickupIndex(this.pickupIndex, newHidden);
+		}
+
+		private void OnSyncPickupIndex(PickupIndex newPickupIndex)
+		{
+			this.SetPickupIndex(newPickupIndex, this.hidden);
+			if (NetworkClient.active)
+			{
+				this.UpdatePickupDisplayAndAnimations();
+			}
+		}
 
 		[Server]
 		public void SetNoPickup()
@@ -157,6 +171,8 @@ namespace Axolotl {
 			}
 			this.SetPickupIndex(PickupIndex.none, false);
 		}
+		#endregion
+
 
 		[Server]
 		public void DropPickup()
@@ -168,17 +184,15 @@ namespace Axolotl {
 			}
 			this.SetHasBeenPurchased(true);
 			if(this.pickupIndex == null)
-            {
+         {
 				Log.LogWarning(nameof(DropPickup) + ": Pickup Index is empty.");
 				return;
-            }
+         }
 			PickupDropletController.CreatePickupDroplet(this.pickupIndex, (this.dropTransform ? this.dropTransform : base.transform).position, base.transform.TransformVector(this.dropVelocity));
 		}
 
 
-		private void UNetVersion()
-		{
-		}
+		private void UNetVersion()	{ }
 
 		public PickupIndex NetworkpickupIndex
 		{
@@ -199,7 +213,7 @@ namespace Axolotl {
 			}
 		}
 
-        public bool Networkhidden
+      public bool Networkhidden
 		{
 			get
 			{
@@ -247,7 +261,7 @@ namespace Axolotl {
 				return true;
 			}
 			bool flag = false;
-			if ((base.syncVarDirtyBits & 1U) != 0U)
+			if ((base.syncVarDirtyBits & 1U) != 0)
 			{
 				if (!flag)
 				{
@@ -256,7 +270,7 @@ namespace Axolotl {
 				}
 				NetworkUtils.WritePickupIndex(writer, this.pickupIndex);
 			}
-			if ((base.syncVarDirtyBits & 2U) != 0U)
+			if ((base.syncVarDirtyBits & 2U) != 0)
 			{
 				if (!flag)
 				{
@@ -265,7 +279,7 @@ namespace Axolotl {
 				}
 				writer.Write(this.hidden);
 			}
-			if ((base.syncVarDirtyBits & 4U) != 0U)
+			if ((base.syncVarDirtyBits & 4U) != 0)
 			{
 				if (!flag)
 				{
