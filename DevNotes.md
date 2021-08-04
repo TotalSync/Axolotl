@@ -139,6 +139,7 @@ This item works a little different than the other two as it doesn't have an IDR.
 Interactables were quite the jump from just working with items. I think it was a good idea, but I had to look into a lot of code on the way the game itself handles certain things. These are completely different from the items in that, they rely on GameObject instances existing and running themselves to a certain extent. These GameObjects, more often than not, have a specific Parent-Child Structure, and certain scripts that need to be placed on certain children to work properly. This is most notable with the Holograms for the price displays. These also need to be animated, so that brings up the complexity of Animators and Animations.
 
 Much like Items, there are a number of important topic, then some additional topics for flair.
+
 __Important:__
 - Director integration
 - Controller and Behaviour Scripts
@@ -161,7 +162,7 @@ Interactable spawn cards (isc) are of a similar vein. They supply the director w
 ### Controller and Behaviour Scripts
 
 This is a difficult topic to describe. The easiest way to understand the relation between these two types of scripts is to consider the multishops in game. There are three terminals radially around a shaft in the middle. The controller is the shaft in the middle of the three terminals. The behaviours are each of the individual child terminals. The controller controls all of the terminals around them. When one shop is purchased, it reports to the controller that it purchased, and the controller closes the other shops.
-![An Image of the Controller Behaviour Structure](/src/img/controller_behaviour.png)
+![An Image of the Controller Behaviour Structure](/src/img/controller_behavior.png)
 In this image, the Holder has the Controller script on it, and the Shops are the Children which have the Behavior scripts on them. I actually spawn each of the Shops using the Controller script. I do this because if the Director was spawnning this, it would not care what spawnned in the shop. Its only concern is that the proper interactable was spawnned. RoR2 does a similar thing in their spawinning of the multishops.
 I was unable to modify the original multishops to fit my need because the original shops pulled from a hard loot table that I could not configure. Creating them from scratch worked out better in the long run, but it was definitely more work.
 To sum this section up, The Controller controls the children Behaviours. The Behaviours actually control the basic behaviors of the shop, but the controller can modify them if a certain condition is met. (i.e. another terminal was purchased and this terminal needs to close now.)
@@ -179,4 +180,4 @@ If you do set this hook dynamically, note that if you are calling a function fro
 ```cs
 gameObject.GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(transform.parent.GetComponent<TargetMultiShopBehaviour>().purchaseCorrection));
 ```
-If you want the terminal to be greyed out and unavailable to purchase, all you must do is `PurchaseInteraction.SetAvailable = false;`. The availability in networked, so you will have to do it this way instead of just directly setting `PurchaseInteraction.available = false;`
+If you want the terminal to be greyed out and unavailable to purchase, all you must do is `PurchaseInteraction.SetAvailable = false;`. The availability in networked, so you will have to do it this way instead of just directly setting `PurchaseInteraction.available = false;`.
