@@ -51,8 +51,6 @@ namespace Axolotl
       public const string PluginName = "Axolotl";
       public const string PluginVersion = "0.0.1";
 
-      public static readonly string PluginPrefix = "AXOLOT";
-
 		//We need our item definition to persist through our functions.
 		#region ItemDefs
 		private static star_glass star_glass_def;

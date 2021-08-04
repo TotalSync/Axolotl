@@ -137,3 +137,46 @@ This item works a little different than the other two as it doesn't have an IDR.
 ## Interactables
 
 Interactables were quite the jump from just working with items. I think it was a good idea, but I had to look into a lot of code on the way the game itself handles certain things. These are completely different from the items in that, they rely on GameObject instances existing and running themselves to a certain extent. These GameObjects, more often than not, have a specific Parent-Child Structure, and certain scripts that need to be placed on certain children to work properly. This is most notable with the Holograms for the price displays. These also need to be animated, so that brings up the complexity of Animators and Animations.
+
+Much like Items, there are a number of important topic, then some additional topics for flair.
+__Important:__
+- Director integration
+- Controller and Behaviour Scripts
+- PurchaseInteractions
+- Prefab Structure
+- Networking
+- Parenting
+
+__Flair:__
+- Animations
+- Holograms
+
+### Director Integration
+Kicking off the important section, it would be a good idea to start with understanding how RoR2 handles spawning interactables. The director purchases interactables and monsters from a DirectorCardCategorySelection. These tend to be prefixed with dccs. Thesea are essentially a 2d array containning sorted spawn cards.
+![An Image of a dccs](/src/img/dccs.png)
+This allows the Director to select an apporpriate interactable to spawn. If you wanted to integrate  your interactables into the spawn table, looking into the InteractablesAPI from R2API might be a good starting point. As it is right now, I do not have my interactables integrated into the spawn pool, so I do not know for a 100% fact how to do it.
+Interactable spawn cards (isc) are of a similar vein. They supply the director with all of the information necessary to spawn the interactable in the world, and conditions for which it is to spawn or not to spawn.
+![An Image of an Interactable Spawn Card](/src/img/isc.png)
+
+### Controller and Behaviour Scripts
+
+This is a difficult topic to describe. The easiest way to understand the relation between these two types of scripts is to consider the multishops in game. There are three terminals radially around a shaft in the middle. The controller is the shaft in the middle of the three terminals. The behaviours are each of the individual child terminals. The controller controls all of the terminals around them. When one shop is purchased, it reports to the controller that it purchased, and the controller closes the other shops.
+![An Image of the Controller Behaviour Structure](/src/img/controller_behaviour.png)
+In this image, the Holder has the Controller script on it, and the Shops are the Children which have the Behavior scripts on them. I actually spawn each of the Shops using the Controller script. I do this because if the Director was spawnning this, it would not care what spawnned in the shop. Its only concern is that the proper interactable was spawnned. RoR2 does a similar thing in their spawinning of the multishops.
+I was unable to modify the original multishops to fit my need because the original shops pulled from a hard loot table that I could not configure. Creating them from scratch worked out better in the long run, but it was definitely more work.
+To sum this section up, The Controller controls the children Behaviours. The Behaviours actually control the basic behaviors of the shop, but the controller can modify them if a certain condition is met. (i.e. another terminal was purchased and this terminal needs to close now.)
+
+### PurchaseInteractions
+
+PurchaseInteraction is a sript that goes on every single interactable in game. This script controls deduction of money from the player among other things. It also can be alterd to remove items from the player as well. The PurchaseInteraction goes on the object that has the Behaviour script, as the PurchaseInteraction is the script that allows for an interaction.
+![An Imgae of the PurchaseInteraction](/src/img/purchase.png)
+![An Image depicting the different types of costs PruchaseInteraction Supports](/src/img/purchase_cost.png)
+In the first image, take note that the check box "Ignore Sphere-Cast for Interactability" is marked. This caused a number of small issues in my scripts when I was debugging. I am still not sure as to the full scope of this setting, but it messed with a good bit. The next thing to notice is the section Named "On Purchase (Interactor)". This is an explicit way of setting hooks. Do note that there is a way to dynamically set hooks.
+```cs
+gameObject.GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(Foo));
+```
+If you do set this hook dynamically, note that if you are calling a function from a different object, or a script not on the object with the PurchaseInteraction, you will have to navigate to it from the perspective of the PurchaseInteraction. For example, below, I modified my code to be a bit more explicit to show this navigation.
+```cs
+gameObject.GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(transform.parent.GetComponent<TargetMultiShopBehaviour>().purchaseCorrection));
+```
+If you want the terminal to be greyed out and unavailable to purchase, all you must do is `PurchaseInteraction.SetAvailable = false;`. The availability in networked, so you will have to do it this way instead of just directly setting `PurchaseInteraction.available = false;`
