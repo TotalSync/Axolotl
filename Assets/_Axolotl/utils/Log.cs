@@ -14,11 +14,6 @@ namespace Axolotl
         }
 
 		#region Initial Functions
-		internal static bool LogInfoBool(object data) 
-        {
-            _logSource.LogDebug(data);
-            return true;
-        }
         internal static void LogDebug(object data) => _logSource.LogDebug(data);
         internal static void LogError(object data) => _logSource.LogError(data);
         internal static void LogFatal(object data) => _logSource.LogFatal(data);
@@ -28,6 +23,11 @@ namespace Axolotl
 		#endregion
 
 		#region Added Functions
+		internal static bool LogInfoBool(object data) 
+        {
+            _logSource.LogDebug(data);
+            return true;
+        }
 		internal static bool printItemBool(Item_Base item)
         {
             Log.LogDebug(nameof(printItemBool) + " for " + item.item_def.nameToken);

@@ -188,3 +188,82 @@ If you do set this hook dynamically, note that if you are calling a function fro
 gameObject.GetComponent<PurchaseInteraction>().onPurchase.AddListener(new UnityAction<Interactor>(transform.parent.GetComponent<TargetMultiShopBehaviour>().purchaseCorrection));
 ```
 If you want the terminal to be greyed out and unavailable to purchase, all you must do is `PurchaseInteraction.SetAvailable = false;`. The availability in networked, so you will have to do it this way instead of just directly setting `PurchaseInteraction.available = false;`.
+If you are having issues with being able to pruchase mutliple items, logically this would be the component to check first. If you are creating an interactable that can be purchased mutliple times, (think chance shrines), there is a function to temporarily disable the PurchaseInteraction. I use this in my [Gatcha Chest](). A rather annoying bug I encountered with this though, was that I was unable to `PurchaseInteraction.SetAvailable = false;` because the code operated after the timer had started. The obvious solution was to use an if statement to determine if the interactable should be disabled perminately.
+
+### Prefab Structure
+
+Now onto the big topic. This topic alone took me a good while to piece together. All of the prefabs in RoR2 have a very particular structure. If you want to make an interactable that takes advantage of a lot of the pre-existing structures in place, then you will need to make sure you follow the appropraiate structure. For instance, the price above most interactables is already a script that we can take advantage of. Rather easily too if we build the right structure.
+
+![An image of the cost hologram](/src/img/cost_hologram.png)
+
+Lets start with the simpler piece, then integrate it into the full system. The gameobject with the behaviour script on it will have its own structure, but ideally it will be parented to the controller at some point.
+
+![An image of a typical interactable layout](/src/img/interactable_layout.png)
+
+To break down this structure show above, I will discuss each item and what it does.
+
+---
+#### Behaviour Object
+
+##### Interactable
+
+This is the parent object, and is the prefab itself. This object will contain: 
+- Behaviour Script
+- PurchaseInteraction Script
+- Highlight Script
+- Ak Game Obj Script
+- Dither Model Script*
+
+(* = optional to my knowledge)
+
+I have discussed the first two scripts enough for now, so I will focus on the last 3. The Highlight script, as its name implies, controls what GameObject is used for the base of the object Highlight. The contained GameObject is typically the main Mesh. (In our example Interactable above, it would be the InteractableMesh GameObject). The Ak Game Obj script is going to throw lots of errors and complain a ton if you place it into a scene. Feel free to ignore them. The Dither model does almost the exact same thing as the Highlight, but it dithers the texture for the RoR2 lighting feel (I think?).
+
+##### Display
+
+- (Box) Collider
+- Entity Locator
+
+Display contains the main collider for the Interactable. It doesn't have to be a box collider, I just chose that for my objects due to it fitting my Interactables better. The Entity Locator Points to the Parent Object. Again referencing our example structure, it would be pointing to `Interactable`.
+
+##### mdlInteractable
+
+- Animator
+- Entity Locator
+- Animation Events
+- Child Locator
+- Random Splat Bias
+
+
+This is the main part of the GameObject now where we move away from actual functionality and more towards looks and feels. The animator is going to the main reason you will interact with this GameObject the most. You will need to make an [AnimationController]() object for this. This alone deserves its own section, and I will attempt address it later. The Entity Locator once again points the the main parent. I am not sure entirely what the Animation Events script does. I personally have just left it blank, but I know it deals with sound. I left the script that in case it not existing messes with some things. The Child Locator contains a reference to the DropCenter Transform.
+
+![An image of the Child Locator](/src/img/dropcenter_loc.png)
+
+The Random Splat Bias has something to do with drop tables. Once again I left it as I saw it on some vanilla items. My scripts pull from a custom drop table, so I do no think that this affects my Interactables in any way, but they may affect your interactables.
+
+##### (NOT SHOWN) Pickup Display
+
+Later I realized I did not include this GameObject in my example structure. This component is explicitly used if you are showing a pickup in the shop at all. This GameObject would be a child of the mdl GameObject. Below I have attached an image of my TargetMultiShop's PickupDisplay Comonents.
+
+![An image of the PickupDisplay Components](/src/img/pickupdisplay_explicit.png)
+
+For the most part all of the values shown here are generated default when you add the scripts to the object.
+
+##### ROOT
+
+This is just an Objet which contains all of the submeshes that are a part of the object, but are not the main object itself. To my knowledge and through my experiences, I have not seen much functionailty take place here.
+
+##### InteractableMesh
+
+This is the main mesh of the interactable. Not much to say here.
+
+##### DropCenter
+
+This is where the drop will initially be dropped from. I did not change the name, as again, I did not want to mess with possible errors in the code just because I changed the name of an object. I would highly suggest positioning this empty object in a place where the pickup orb can't collide with anything.
+
+![DropCenter](/src/img/dropcenter.png)
+
+---
+
+#### Controller Object
+
+Now that we have covered the structure of the Behaviour object, we can move to the structure of the Controller object. This object can tie more into the structure of the Behaviour object
