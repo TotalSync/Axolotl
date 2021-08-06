@@ -203,9 +203,9 @@ Lets start with the simpler piece, then integrate it into the full system. The g
 To break down this structure show above, I will discuss each item and what it does.
 
 ---
-#### Behaviour Object
+#### __Behaviour Object__
 
-##### Interactable
+##### __Interactable__
 
 This is the parent object, and is the prefab itself. This object will contain: 
 - Behaviour Script
@@ -218,14 +218,14 @@ This is the parent object, and is the prefab itself. This object will contain:
 
 I have discussed the first two scripts enough for now, so I will focus on the last 3. The Highlight script, as its name implies, controls what GameObject is used for the base of the object Highlight. The contained GameObject is typically the main Mesh. (In our example Interactable above, it would be the InteractableMesh GameObject). The Ak Game Obj script is going to throw lots of errors and complain a ton if you place it into a scene. Feel free to ignore them. The Dither model does almost the exact same thing as the Highlight, but it dithers the texture for the RoR2 lighting feel (I think?).
 
-##### Display
+##### __Display__
 
 - (Box) Collider
 - Entity Locator
 
 Display contains the main collider for the Interactable. It doesn't have to be a box collider, I just chose that for my objects due to it fitting my Interactables better. The Entity Locator Points to the Parent Object. Again referencing our example structure, it would be pointing to `Interactable`.
 
-##### mdlInteractable
+##### __mdlInteractable__
 
 - Animator
 - Entity Locator
@@ -240,7 +240,7 @@ This is the main part of the GameObject now where we move away from actual funct
 
 The Random Splat Bias has something to do with drop tables. Once again I left it as I saw it on some vanilla items. My scripts pull from a custom drop table, so I do no think that this affects my Interactables in any way, but they may affect your interactables.
 
-##### (NOT SHOWN) Pickup Display
+##### __(NOT SHOWN) Pickup Display__
 
 Later I realized I did not include this GameObject in my example structure. This component is explicitly used if you are showing a pickup in the shop at all. This GameObject would be a child of the mdl GameObject. Below I have attached an image of my TargetMultiShop's PickupDisplay Comonents.
 
@@ -248,15 +248,15 @@ Later I realized I did not include this GameObject in my example structure. This
 
 For the most part all of the values shown here are generated default when you add the scripts to the object.
 
-##### ROOT
+##### __ROOT__
 
 This is just an Objet which contains all of the submeshes that are a part of the object, but are not the main object itself. To my knowledge and through my experiences, I have not seen much functionailty take place here.
 
-##### InteractableMesh
+##### __InteractableMesh__
 
 This is the main mesh of the interactable. Not much to say here.
 
-##### DropCenter
+##### __DropCenter__
 
 This is where the drop will initially be dropped from. I did not change the name, as again, I did not want to mess with possible errors in the code just because I changed the name of an object. I would highly suggest positioning this empty object in a place where the pickup orb can't collide with anything.
 
@@ -264,6 +264,55 @@ This is where the drop will initially be dropped from. I did not change the name
 
 ---
 
-#### Controller Object
+#### __Controller Object__
 
 Now that we have covered the structure of the Behaviour object, we can move to the structure of the Controller object. This object can tie more into the structure of the Behaviour object
+
+The Controller Object structure is much more simple than the Behaviour. That beign said, it has a few more neuances than the Behaviour. The Behaviour will be parented to the Controller Object once it is created, typically through `GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(prefab, parent.transform);`. This forces the parent to accept the new child, whereas, if you use `...Instantiate<GameObject>(prefab, parent.transform.position, parent.transform.rotation);` sometimes the child can be left as an orphan.
+
+As another aside: make sure that your assets are imported through an assetbundle. TK offers an easy way through the use of their manifest.
+
+![An image of FuckOffErrors](/src/img/manifest_bundle.png)
+
+The Controller Scripts also contains a very important and useful line of code.
+
+```cs
+public class TargetMultiShopController : NetworkBehaviour, IHologramContentProvider 
+{
+...
+}
+```
+
+This interface `IHologramContentProvider` allows for very easy integration of the price holograms that appear above the shops. Be aware though that these will probably look for a vanilla PurchaseInteraction an may cause issues when loading a modded "price". Additionally by adding this interace VS should now be complaining about a number of functions not added to the script. These functions are all rather easy to add and expose almost no code.
+
+```cs
+// Used to check if cost hologram should be displayed
+public bool ShouldDisplayHologram(GameObject viewer)
+{
+	return this.available;
+}
+
+//Copypasta for this one.
+public GameObject GetHologramContentPrefab()
+{
+	return Resources.Load<GameObject>("Prefabs/CostHologramContent");
+}
+
+//Returns the cost type and the cost amount
+public void UpdateHologramContent(GameObject hologramContentObject)
+{
+	CostHologramContent component = hologramContentObject.GetComponent<CostHologramContent>();
+	if (component)
+	{
+		component.displayValue = this.cost;
+		component.costType = this.costType;
+	}
+}
+```
+
+On the side of the actual structure, for the Controller Object, it will only have one, maybe two children. The first is what you use as a location to spawn your Behaviour Object once your controller has finished setting up. The second is used by the `IHologramContentProvider`. In my attached images below, I show a multishop, so it has four children. I do this because I spawn three "different" shops and close all of them with the controller when any one of them is bought.
+
+![](/src/img/targetholder.png)
+![](/src/img/targetholder_comp.png)
+
+As you can see in the second image, adding the Hologram Projector Script and attaching the transform of the HologramPivot allows everything to work smoothly.

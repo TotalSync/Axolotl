@@ -236,17 +236,15 @@ namespace Axolotl
       }
 
       #region Holograms
-        public bool ShouldDisplayHologram(GameObject viewer)
+      public bool ShouldDisplayHologram(GameObject viewer)
 		{
 			return this.available;
 		}
-
 
 		public GameObject GetHologramContentPrefab()
 		{
 			return Resources.Load<GameObject>("Prefabs/CostHologramContent");
 		}
-
 
 		public void UpdateHologramContent(GameObject hologramContentObject)
 		{
@@ -257,7 +255,7 @@ namespace Axolotl
 				component.costType = this.costType;
 			}
 		}
-        #endregion
+      #endregion
 
       #region Networking
       private void UNetVersion() { }
